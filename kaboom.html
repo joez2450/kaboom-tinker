@@ -24,10 +24,28 @@
     kaboom();
 
     // add a piece of text at position (120, 80)
-    add([
-        text("I love to code!"),
-        pos(250, 80),
-    ]);
+add([
+    pos (250, 80),
+
+        text ("I love to code!",{
+        size: 76,
+        width: 320,
+        font: "sans-serif",
+    }),
+]);
+
+ add([
+    pos(1400, 180),
+    rect(100, 1000),
+    outline(4),
+    area(),
+])
+
+add([
+    pos(1000, 180),
+    circle(40),
+])
+
         </script>
     </body>
 </html>
