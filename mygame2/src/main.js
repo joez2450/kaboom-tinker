@@ -1,148 +1,163 @@
-const FLOOR_HEIGHT = 48;
-const JUMP_FORCE = 800;
-const SPEED = 480;
-
-// initialize context
 import kaboom from "kaboom"
-kaboom();
 
-// load assets
-loadSprite("bean", "sprites/bean.png");
 
-scene("game", () => {
+const k = kaboom()
 
-    // define gravity
-    setGravity(1600);
 
-    // add a game object to screen
-    const player = add([
-        // list of components
-        sprite("bean"),
-        pos(80, 40),
-        area(),
-        body(),
-    ]);
 
-    // floor
-    add([
-        rect(width(), FLOOR_HEIGHT),
-        outline(4),
-        pos(0, height()),
-        anchor("botleft"),
-        area(),
-        body({ isStatic: true }),
-        color(127, 200, 255),
-    ]);
 
-    function jump() {
-        if (player.isGrounded()) {
-            player.jump(JUMP_FORCE);
+//loading sprites
+k.loadSprite("bean", "sprites/bean.png")
+k.loadSprite("block", "sprites/block.jpg")
+k.loadSprite("spike", "sprites/spike.jpg")
+
+
+const SPEED = 400;
+k.setGravity(1300);
+
+
+const LEVELS = [
+    [
+        "@ >>>>>>>>>>>",
+    ],
+]
+
+
+// Define a scene called "game". The callback will be run when we go() to the scene
+// Scenes can accept argument from go()
+scene("game", ({ levelIdx, score }) => {
+
+
+    // Use the level passed, or first level
+    const level = addLevel(LEVELS[levelIdx || 0], {
+
+        tileWidth: 64,
+        tileHeight: 64,
+        pos: vec2(100, 200),
+        tiles: {
+            "@": () => [
+                sprite("bean"),
+                area(),
+                body(),
+                anchor("bot"),
+                "bean",
+            ],
+
+            "^": () => [
+                sprite("spike"),
+                area(),
+                anchor("bot"),
+                scale(.2),
+
+            ],
+            ">": () => [
+                sprite("block"),
+                area(),
+                anchor("bot"),
+                scale(0.2),
+                pos(width(), height()-200),
+                body({ isStatic: true }),
+                anchor("bot"),
+            ],
+        },
+    })
+
+
+    // Get the object from tag
+    const bean = level.get("bean")[0]
+
+
+
+
+    // movement
+onKeyPress("space", () => {
+    if (bean.isGrounded()) {
+        bean.jump()
+    }
+})
+
+
+onKeyDown("left", () => {
+    bean.move(-SPEED, 0)
+})
+
+
+onKeyDown("right", () => {
+    bean.move(SPEED, 0)
+})
+
+
+
+
+    bean.onCollide("danger", () => {
+        bean.pos = level.tile2Pos(0, 0)
+        // Go to "lose" scene when we hit a "danger"
+        go("lose")
+    })
+
+
+    // Fall death
+    bean.onUpdate(() => {
+        if (bean.pos.y >= 480) {
+            go("lose")
         }
-    }
+    })
 
-    // jump when user press space
-    onKeyPress("space", jump);
-    onClick(jump);
 
-    function spawnTree() {
-
-        // add tree obj
-        add([
-            rect(48, rand(32, 96)),
-            area(),
-            outline(4),
-            pos(width(), height() - FLOOR_HEIGHT),
-            anchor("botleft"),
-            color(255, 180, 255),
-            move(LEFT, SPEED),
-            "tree",
-        ]);
-
-        // wait a random amount of time to spawn next tree
-        wait(rand(0.5, 1.5), spawnTree);
-
-    }
-
-    // start spawning trees
-    spawnTree();
-
-    // lose if player collides with any game obj with tag "tree"
-    player.onCollide("tree", () => {
-        // go to "lose" scene and pass the score
-        go("lose", score);
-        burp();
-        addKaboom(player.pos);
-    });
-
-    // keep track of score
-    let score = 0;
-
+    // Score counter text
     const scoreLabel = add([
         text(score),
-        pos(24, 24),
-    ]);
+        pos(12),
+    ])
 
-    // increment score every frame
-    onUpdate(() => {
-        score++;
-        scoreLabel.text = score;
-    });
 
-});
-
-scene("lose", (score) => {
-
-    add([
-        sprite("bean"),
-        pos(width() / 2, height() / 2 - 80),
-        scale(2),
-        anchor("center"),
-    ]);
-
-    // display score
-    add([
-        text(score),
-        pos(width() / 2, height() / 2 + 80),
-        scale(2),
-        anchor("center"),
-    ]);
-
-    // go back to game with space is pressed
-    onKeyPress("space", () => go("game"));
-    onClick(() => go("game"));
-
-});
-
-go("game");
-
-onKeyPress("r", () => {
-	addLevel([
-		"                          $",
-		"                          $",
-		"           $$         =   $",
-		"  %      ====         =   $",
-		"                      =    ",
-		"       ^^      = >    =   &",
-		"===========================",
-	], {
-		// define the size of tile block
-		tileWidth: 32,
-		tileHeight: 32,
-		// define what each symbol means, by a function returning a component list (what will be passed to add())
-		tiles: {
-			"=": () => [
-				area(),
-				solid(),
-			],
-			"$": () => [
-				area(),
-				pos(0, -9),
-			],
-			"^": () => [
-				sprite("spike"),
-				area(),
-				"danger",
-			],
-		}
-	})
 })
+
+
+scene("lose", () => {
+
+
+    add([
+        text("You Lose"),
+        pos(12),
+    ])
+
+
+    // Press any key to go back
+    onKeyPress(start)
+
+
+})
+
+
+scene("win", ({ score }) => {
+
+
+    add([
+        text(`You grabbed ${score} coins!!!`, {
+            width: width(),
+        }),
+        pos(12),
+    ])
+
+
+    onKeyPress(start)
+
+
+})
+
+
+function start() {
+    go("game", {
+        levelIdx: 0,
+        score: 0,
+    })
+}
+
+
+start()
+
+
+
+
+
